@@ -42,23 +42,8 @@ if [[ -z "$MD" ]]; then
     done
 else
     find "$ID" -mindepth 1 -maxdepth "$MD" -type f | while read -r FILE; do
-        REL_PATH=$(realpath --relative-to="$ID" "$FILE")
-        
-        FILE_DEPTH=$(echo "$REL_PATH" | awk -F'/' '{print NF-1}')
-        
-        TRIMMED_PATH=""
-        if [[ "$FILE_DEPTH" -gt 0 ]]; then
-            TRIMMED_PATH=$(echo "$REL_PATH" | awk -v maxd="$MD" -F'/' '{
-                out=""
-                for (i=1; i<NF; i++) {
-                    out=out""$i"/"
-                    if (i+1 == maxd) break
-                }
-                print out
-            }')
-        fi
-
-        DEST_DIR="$OD/$TRIMMED_PATH"
+        REL_DIR=$(dirname "$(realpath --relative-to="$ID" "$FILE")")
+        DEST_DIR="$OD/$REL_DIR"
         mkdir -p "$DEST_DIR"
         BASENAME=$(basename "$FILE")
         DEST="$DEST_DIR/$BASENAME"
