@@ -22,33 +22,22 @@ if [[ "${3:-}" == "--max_depth" ]]; then
     echo "Error: --max_depth requires a numeric value."
     exit 1
   fi
-  MD="$4"
-  MDA="-maxdepth $MD"
+  MDA="-maxdepth $4"
 fi
 
 mkdir -p "$OD"
 
-mapfile -d '' FILES < <(find "$ID" $MDA -type f -print0)
-
-for file in "${FILES[@]}"; do
+find "$ID" $MDA -type f -print0 | while IFS= read -r -d '' file; do
   rel_path="${file#$ID/}"
-  dir_part="$(dirname "$rel_path")"
-  base_name="$(basename "$file")"
+  safe_name="${rel_path//\//__}"
 
-  if [[ "$dir_part" == "." ]]; then
-    dest_name="$base_name"
-  else
-    safe_dir="${dir_part//\//_}"
-    dest_name="${safe_dir}_${base_name}"
-  fi
-
-  dest_path="$OD/$dest_name"
+  dest_path="$OD/$safe_name"
 
   if [[ ! -e "$dest_path" ]]; then
     cp -p "$file" "$dest_path"
   else
-    name="${dest_name%.*}"
-    ext="${dest_name##*.}"
+    name="${safe_name%.*}"
+    ext="${safe_name##*.}"
     if [[ "$name" == "$ext" ]]; then
       ext=""
     else
@@ -56,12 +45,12 @@ for file in "${FILES[@]}"; do
     fi
 
     index=1
-    while [[ -e "$OD/${name}${index}${ext}" ]]; do
+    while [[ -e "$OD/${name}_${index}${ext}" ]]; do
       ((index++))
     done
-
-    cp -p "$file" "$OD/${name}${index}${ext}"
+    cp -p "$file" "$OD/${name}_${index}${ext}"
   fi
+
 done
 
-echo "All files successfully collected into $OD"
+echo "All files collected into $OD"
