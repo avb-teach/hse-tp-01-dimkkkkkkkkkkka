@@ -1,70 +1,65 @@
 #!/bin/bash
 
-if [[ "$#" -lt 2 ]]; then
-    echo "Usage: $0 [--max_depth N] input_dir output_dir"
-    exit 1
+set -euo pipefail
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: $0 /path/to/input_dir /path/to/output_dir [--max_depth N]"
+  exit 1
 fi
 
-MD=""
-if [[ "$1" == "--max_depth" ]]; then
-    if [[ -z "$2" || -z "$3" ]]; then
-        echo "Usage: $0 [--max_depth N] input_dir output_dir"
-        exit 1
-    fi
-    MDA="$2"
-    ID="$3"
-    OD="$4"
-    MD="$MDA"
-else
-    ID="$1"
-    OD="$2"
-fi
+ID="$1"
+OD="$2"
+shift 2
 
 if [[ ! -d "$ID" ]]; then
-    echo "Input directory does not exist: $ID"
+  echo "Error: input directory '$ID' does not exist."
+  exit 1
+fi
+
+MDA=""
+if [[ "${1:-}" == "--max_depth" ]]; then
+  if [[ -z "${2:-}" || ! "${2}" =~ ^[0-9]+$ ]]; then
+    echo "Error: --max_depth requires a numeric value."
     exit 1
+  fi
+  MDA="-maxdepth $2"
 fi
 
 mkdir -p "$OD"
 
-if [[ -n "$MD" ]]; then
-    find "$ID" -mindepth 1 -maxdepth "$MD" -type f | while read -r FILE; do
-        REL_PATH=$(realpath --relative-to="$ID" "$(dirname "$FILE")")
-        DEST_DIR="$OD/$REL_PATH"
-        mkdir -p "$DEST_DIR"
-        BASENAME=$(basename "$FILE")
-        DEST="$DEST_DIR/$BASENAME"
-        COUNTER=1
-        while [[ -e "$DEST" ]]; do
-            EXT="${BASENAME##*.}"
-            NAME="${BASENAME%.*}"
-            if [[ "$EXT" != "$BASENAME" ]]; then
-                DEST="$DEST_DIR/${NAME}${COUNTER}.${EXT}"
-            else
-                DEST="$DEST_DIR/${NAME}${COUNTER}"
-            fi
-            ((COUNTER++))
-        done
-        cp "$FILE" "$DEST"
-    done
-else
-    find "$ID" -type f | while read -r FILE; do
-        BASENAME=$(basename "$FILE")
-        DEST="$OD/$BASENAME"
-        COUNTER=1
-        while [[ -e "$DEST" ]]; do
-            EXT="${BASENAME##*.}"
-            NAME="${BASENAME%.*}"
-            if [[ "$EXT" != "$BASENAME" ]]; then
-                DEST="$OD/${NAME}${COUNTER}.${EXT}"
-            else
-                DEST="$OD/${NAME}${COUNTER}"
-            fi
-            ((COUNTER++))
-        done
-        cp "$FILE" "$DEST"
-    done
-fi
+generate_unique_name() {
+  local dir="$1"
+  local name="$2"
+  local base="${name%.*}"
+  local ext="${name##*.}"
+  if [[ "$base" == "$ext" ]]; then
+    ext=""
+  else
+    ext=".$ext"
+  fi
+  local i=1
+  local new_name="$name"
+  while [[ -e "$dir/$new_name" ]]; do
+    new_name="${base}_$i$ext"
+    ((i++))
+  done
+  echo "$new_name"
+}
 
-echo "Files collected successfully."
+find "$ID" $MDA -type f -print0 | while IFS= read -r -d '' file; do
+  rel_path="${file#$ID/}"
+  dest_dir="$(dirname "$OD/$rel_path")"
+  base_name="$(basename "$file")"
+
+  mkdir -p "$dest_dir"
+
+  dest_path="$dest_dir/$base_name"
+  if [[ -e "$dest_path" ]]; then
+    unique_name=$(generate_unique_name "$dest_dir" "$base_name")
+    cp -p -- "$file" "$dest_dir/$unique_name"
+  else
+    cp -p -- "$file" "$dest_path"
+  fi
+done
+
 exit 0
