@@ -1,4 +1,4 @@
-#!/bin/bash
+x#!/bin/bash
 
 if [[ "$#" -lt 2 ]]; then
     echo "Usage: $0 [--max_depth N] input_dir output_dir"
@@ -12,8 +12,8 @@ if [[ "$1" == "--max_depth" ]]; then
         exit 1
     fi
     MDA="$2"
-    ID="$3"
     OD="$4"
+    ID="$3"
     MD="$MDA"
 else
     ID="$1"
