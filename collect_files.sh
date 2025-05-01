@@ -27,28 +27,39 @@ fi
 
 mkdir -p "$OD"
 
-if [[ -z "$MD" ]]; then
-    find "$ID" -type f | while read -r FILE; do
+if [[ -n "$MD" ]]; then
+    find "$ID" -mindepth 1 -maxdepth "$MD" -type f | while read -r FILE; do
+        REL_PATH=$(realpath --relative-to="$ID" "$(dirname "$FILE")")
+        DEST_DIR="$OD/$REL_PATH"
+        mkdir -p "$DEST_DIR"
         BASENAME=$(basename "$FILE")
-        DEST="$OD/$BASENAME"
+        DEST="$DEST_DIR/$BASENAME"
         COUNTER=1
         while [[ -e "$DEST" ]]; do
-            DEST="$OD/${BASENAME%.*}$COUNTER.${BASENAME##*.}"
+            EXT="${BASENAME##*.}"
+            NAME="${BASENAME%.*}"
+            if [[ "$EXT" != "$BASENAME" ]]; then
+                DEST="$DEST_DIR/${NAME}${COUNTER}.${EXT}"
+            else
+                DEST="$DEST_DIR/${NAME}${COUNTER}"
+            fi
             ((COUNTER++))
         done
         cp "$FILE" "$DEST"
     done
 else
-    find "$ID" -mindepth 1 -maxdepth "$MD" -type f | while read -r FILE; do
-        REL_PATH=$(realpath --relative-to="$ID" "$(dirname "$FILE")")
-        DEST_DIR="$OD/$REL_PATH"
-        mkdir -p "$DEST_DIR"
-
+    find "$ID" -type f | while read -r FILE; do
         BASENAME=$(basename "$FILE")
-        DEST="$DEST_DIR/$BASENAME"
+        DEST="$OD/$BASENAME"
         COUNTER=1
         while [[ -e "$DEST" ]]; do
-            DEST="$DEST_DIR/${BASENAME%.*}$COUNTER.${BASENAME##*.}"
+            EXT="${BASENAME##*.}"
+            NAME="${BASENAME%.*}"
+            if [[ "$EXT" != "$BASENAME" ]]; then
+                DEST="$OD/${NAME}${COUNTER}.${EXT}"
+            else
+                DEST="$OD/${NAME}${COUNTER}"
+            fi
             ((COUNTER++))
         done
         cp "$FILE" "$DEST"
