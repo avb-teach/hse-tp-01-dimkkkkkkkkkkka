@@ -25,9 +25,7 @@ if [[ ! -d "$ID" ]]; then
     exit 1
 fi
 
-if [[ ! -d "$OD" ]]; then
-    mkdir -p "$OD"
-fi
+mkdir -p "$OD"
 
 if [[ -z "$MD" ]]; then
     find "$ID" -type f | while read -r FILE; do
@@ -42,9 +40,10 @@ if [[ -z "$MD" ]]; then
     done
 else
     find "$ID" -mindepth 1 -maxdepth "$MD" -type f | while read -r FILE; do
-        REL_DIR=$(dirname "$(realpath --relative-to="$ID" "$FILE")")
-        DEST_DIR="$OD/$REL_DIR"
+        REL_PATH=$(realpath --relative-to="$ID" "$(dirname "$FILE")")
+        DEST_DIR="$OD/$REL_PATH"
         mkdir -p "$DEST_DIR"
+
         BASENAME=$(basename "$FILE")
         DEST="$DEST_DIR/$BASENAME"
         COUNTER=1
