@@ -22,7 +22,8 @@ if [[ "${3:-}" == "--max_depth" ]]; then
     echo "Error: --max_depth requires a numeric value."
     exit 1
   fi
-  MDA="-maxdepth $4"
+  MD="$4"
+  MDA="-maxdepth $MD"
 fi
 
 mkdir -p "$OD"
@@ -36,17 +37,18 @@ find "$ID" $MDA -type f -print0 | while IFS= read -r -d '' file; do
   else
     name="${base_name%.*}"
     ext="${base_name##*.}"
-
     if [[ "$name" == "$ext" ]]; then
       ext=""
     else
       ext=".$ext"
     fi
 
-    suffix="$(date +%s%N | sha256sum | head -c 6)"
-
-    cp -p "$file" "$OD/${name}_${suffix}${ext}"
+    i=1
+    while [[ -e "$OD/${name}_$i$ext" ]]; do
+      ((i++))
+    done
+    cp -p "$file" "$OD/${name}_$i$ext"
   fi
 done
 
-echo "Files copied to $OD"
+echo "All files successfully copied to $OD"
