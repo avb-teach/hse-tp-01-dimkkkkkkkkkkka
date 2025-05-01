@@ -43,7 +43,7 @@ generate_unique_name() {
   local new_name="$base_name"
 
   while [[ -e "$dest_dir/$new_name" ]]; do
-    new_name="${name}_$i$ext"
+    new_name="${name}_${i}${ext}"
     ((i++))
   done
 
