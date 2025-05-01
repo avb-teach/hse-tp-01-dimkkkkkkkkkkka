@@ -28,37 +28,37 @@ fi
 mkdir -p "$OD"
 
 generate_unique_name() {
-  local dest_dir="$1"
-  local base_name="$2"
-  local name="${base_name%.*}"
-  local ext="${base_name##*.}"
-
-  if [[ "$name" == "$ext" ]]; then
+  local dir="$1"
+  local name="$2"
+  local base="${name%.*}"
+  local ext="${name##*.}"
+  if [[ "$base" == "$ext" ]]; then
     ext=""
   else
     ext=".$ext"
   fi
-
   local i=1
-  local new_name="$base_name"
-
-  while [[ -e "$dest_dir/$new_name" ]]; do
-    new_name="${name}_${i}${ext}"
+  local new_name="$name"
+  while [[ -e "$dir/$new_name" ]]; do
+    new_name="${base}_$i$ext"
     ((i++))
   done
-
   echo "$new_name"
 }
 
 find "$ID" $MDA -type f -print0 | while IFS= read -r -d '' file; do
+  rel_path="${file#$ID/}"
+  dest_dir="$(dirname "$OD/$rel_path")"
   base_name="$(basename "$file")"
-  dest_path="$OD/$base_name"
 
-  if [[ ! -e "$dest_path" ]]; then
-    cp -p -- "$file" "$dest_path"
+  mkdir -p "$dest_dir"
+
+  dest_path="$dest_dir/$base_name"
+  if [[ -e "$dest_path" ]]; then
+    unique_name=$(generate_unique_name "$dest_dir" "$base_name")
+    cp -p -- "$file" "$dest_dir/$unique_name"
   else
-    unique_name=$(generate_unique_name "$OD" "$base_name")
-    cp -p -- "$file" "$OD/$unique_name"
+    cp -p -- "$file" "$dest_path"
   fi
 done
 
