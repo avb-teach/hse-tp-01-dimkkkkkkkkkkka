@@ -36,19 +36,15 @@ find "$ID" $MDA -type f -print0 | while IFS= read -r -d '' file; do
   if [[ ! -e "$dest_path" ]]; then
     cp -p "$file" "$dest_path"
   else
-    name="${safe_name%.*}"
+    base="${safe_name%.*}"
     ext="${safe_name##*.}"
-    if [[ "$name" == "$ext" ]]; then
-      ext=""
-    else
-      ext=".$ext"
-    fi
+    [[ "$base" == "$ext" ]] && ext="" || ext=".$ext"
 
-    index=1
-    while [[ -e "$OD/${name}_${index}${ext}" ]]; do
-      ((index++))
+    i=1
+    while [[ -e "$OD/${base}_$i$ext" ]]; do
+      ((i++))
     done
-    cp -p "$file" "$OD/${name}_${index}${ext}"
+    cp -p "$file" "$OD/${base}_$i$ext"
   fi
 
 done
