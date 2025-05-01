@@ -9,6 +9,7 @@ fi
 
 ID="$1"
 OD="$2"
+shift 2
 
 if [[ ! -d "$ID" ]]; then
   echo "Error: input directory '$ID' does not exist."
@@ -16,12 +17,12 @@ if [[ ! -d "$ID" ]]; then
 fi
 
 MDA=""
-if [[ "${3:-}" == "--max_depth" ]]; then
-  if [[ -z "${4:-}" || ! "${4}" =~ ^[0-9]+$ ]]; then
+if [[ "${1:-}" == "--max_depth" ]]; then
+  if [[ -z "${2:-}" || ! "${2}" =~ ^[0-9]+$ ]]; then
     echo "Error: --max_depth requires a numeric value."
     exit 1
   fi
-  MDA="-maxdepth $4"
+  MDA="-maxdepth $2"
 fi
 
 mkdir -p "$OD"
@@ -31,7 +32,6 @@ generate_unique_name() {
   local base_name="$2"
   local name="${base_name%.*}"
   local ext="${base_name##*.}"
-  local i=1
 
   if [[ "$name" == "$ext" ]]; then
     ext=""
@@ -39,7 +39,9 @@ generate_unique_name() {
     ext=".$ext"
   fi
 
+  local i=1
   local new_name="$base_name"
+
   while [[ -e "$dest_dir/$new_name" ]]; do
     new_name="${name}_$i$ext"
     ((i++))
