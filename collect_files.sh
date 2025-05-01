@@ -31,15 +31,24 @@ mkdir -p "$OD"
 mapfile -d '' FILES < <(find "$ID" $MDA -type f -print0)
 
 for file in "${FILES[@]}"; do
+  rel_path="${file#$ID/}"
+  dir_part="$(dirname "$rel_path")"
   base_name="$(basename "$file")"
-  dest_path="$OD/$base_name"
+
+  if [[ "$dir_part" == "." ]]; then
+    dest_name="$base_name"
+  else
+    safe_dir="${dir_part//\//_}"
+    dest_name="${safe_dir}_${base_name}"
+  fi
+
+  dest_path="$OD/$dest_name"
 
   if [[ ! -e "$dest_path" ]]; then
     cp -p "$file" "$dest_path"
   else
-    name="${base_name%.*}"
-    ext="${base_name##*.}"
-
+    name="${dest_name%.*}"
+    ext="${dest_name##*.}"
     if [[ "$name" == "$ext" ]]; then
       ext=""
     else
