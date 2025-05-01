@@ -45,7 +45,14 @@ else
         REL_PATH=$(realpath --relative-to="$ID" "$(dirname "$FILE")")
         DEST_DIR="$OD/$REL_PATH"
         mkdir -p "$DEST_DIR"
-        cp "$FILE" "$DEST_DIR/"
+        BASENAME=$(basename "$FILE")
+        DEST="$DEST_DIR/$BASENAME"
+        COUNTER=1
+        while [[ -e "$DEST" ]]; do
+            DEST="$DEST_DIR/${BASENAME%.*}$COUNTER.${BASENAME##*.}"
+            ((COUNTER++))
+        done
+        cp "$FILE" "$DEST"
     done
 fi
 
