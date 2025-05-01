@@ -1,52 +1,53 @@
 #!/bin/bash
 
-set -euo pipefail
-
-if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 /path/to/input_dir /path/to/output_dir [--max_depth N]"
-  exit 1
+if [[ "$#" -lt 2 ]]; then
+    echo "Usage: $0 [--max_depth N] input_dir output_dir"
+    exit 1
 fi
 
-ID="$1"
-OD="$2"
 MD=""
-MDA=""
+if [[ "$1" == "--max_depth" ]]; then
+    if [[ -z "$2" || -z "$3" ]]; then
+        echo "Usage: $0 [--max_depth N] input_dir output_dir"
+        exit 1
+    fi
+    MDA="$2"
+    ID="$3"
+    OD="$4"
+    MD="$MDA"
+else
+    ID="$1"
+    OD="$2"
+fi
 
 if [[ ! -d "$ID" ]]; then
-  echo "Error: input directory '$ID' does not exist."
-  exit 1
-fi
-
-if [[ "${3:-}" == "--max_depth" ]]; then
-  if [[ -z "${4:-}" || ! "${4}" =~ ^[0-9]+$ ]]; then
-    echo "Error: --max_depth requires a numeric value."
+    echo "Input directory does not exist: $ID"
     exit 1
-  fi
-  MDA="-maxdepth $4"
 fi
 
-mkdir -p "$OD"
+if [[ ! -d "$OD" ]]; then
+    mkdir -p "$OD"
+fi
 
-find "$ID" $MDA -type f -print0 | while IFS= read -r -d '' file; do
-  rel_path="${file#$ID/}"
-  safe_name="${rel_path//\//__}"
-
-  dest_path="$OD/$safe_name"
-
-  if [[ ! -e "$dest_path" ]]; then
-    cp -p "$file" "$dest_path"
-  else
-    base="${safe_name%.*}"
-    ext="${safe_name##*.}"
-    [[ "$base" == "$ext" ]] && ext="" || ext=".$ext"
-
-    i=1
-    while [[ -e "$OD/${base}_$i$ext" ]]; do
-      ((i++))
+if [[ -z "$MD" ]]; then
+    find "$ID" -type f | while read -r FILE; do
+        BASENAME=$(basename "$FILE")
+        DEST="$OD/$BASENAME"
+        COUNTER=1
+        while [[ -e "$DEST" ]]; do
+            DEST="$OD/${BASENAME%.*}$COUNTER.${BASENAME##*.}"
+            ((COUNTER++))
+        done
+        cp "$FILE" "$DEST"
     done
-    cp -p "$file" "$OD/${base}_$i$ext"
-  fi
+else
+    find "$ID" -mindepth 1 -maxdepth "$MD" -type f | while read -r FILE; do
+        REL_PATH=$(realpath --relative-to="$ID" "$(dirname "$FILE")")
+        DEST_DIR="$OD/$REL_PATH"
+        mkdir -p "$DEST_DIR"
+        cp "$FILE" "$DEST_DIR/"
+    done
+fi
 
-done
-
-echo "All files collected into $OD"
+echo "Files collected successfully."
+exit 0
